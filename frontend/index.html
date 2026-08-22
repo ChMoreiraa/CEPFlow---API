@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CEPFlow</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #131a24;
+    --line: #23303f;
+    --text: #dbe4ee;
+    --muted: #7c8ba1;
+    --accent: #4fd1c5;
+    --accent-dim: #2a5a55;
+    --error: #ef7d6b;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  h1 {
+    font-size: 20px;
+    letter-spacing: 0.02em;
+    margin: 0;
+    font-weight: 600;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 28px;
+  }
+
+  /* --- fluxo (elemento de assinatura) --- */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 28px;
+    font-family: "JetBrains Mono", "Courier New", monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .flow .node {
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--panel);
+    white-space: nowrap;
+    transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
+  }
+
+  .flow .arrow {
+    color: var(--line);
+    transition: color 0.25s ease;
+  }
+
+  .flow.active .node,
+  .flow.active .arrow { color: var(--muted); }
+
+  .flow .node.on {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+
+  .flow .arrow.on { color: var(--accent); }
+
+  /* --- formulário --- */
+  form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: "JetBrains Mono", "Courier New", monospace;
+    font-size: 15px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    outline: none;
+    letter-spacing: 0.03em;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+  }
+
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  button {
+    background: var(--accent);
+    color: #06201d;
+    border: none;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 0 22px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+
+  button:hover { opacity: 0.88; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* --- resultado --- */
+  .result {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    padding: 20px;
+    display: none;
+  }
+
+  .result.show { display: block; }
+
+  .field {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+
+  .field:last-child { border-bottom: none; }
+
+  .field .label {
+    color: var(--muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-top: 2px;
+  }
+
+  .field .value {
+    text-align: right;
+    font-family: "JetBrains Mono", "Courier New", monospace;
+  }
+
+  .message {
+    display: none;
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+
+  .message.show { display: block; }
+
+  .message.error {
+    background: rgba(239, 125, 107, 0.1);
+    border: 1px solid rgba(239, 125, 107, 0.35);
+    color: var(--error);
+  }
+
+  footer {
+    margin-top: 24px;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <header>
+    <h1>CEP<span>Flow</span></h1>
+  </header>
+  <p class="subtitle">Consulta e validação de endereços a partir de um CEP.</p>
+
+  <div class="flow" id="flow">
+    <div class="node" data-step="cliente">cliente</div>
+    <div class="arrow">→</div>
+    <div class="node" data-step="api">cepflow</div>
+    <div class="arrow">→</div>
+    <div class="node" data-step="viacep">viacep</div>
+    <div class="arrow">→</div>
+    <div class="node" data-step="json">json</div>
+  </div>
+
+  <form id="form">
+    <input
+      type="text"
+      id="cep-input"
+      placeholder="Digite um CEP, ex: 01310-100"
+      inputmode="numeric"
+      maxlength="9"
+      autocomplete="off"
+    >
+    <button type="submit" id="submit-btn">Buscar</button>
+  </form>
+
+  <div class="message error" id="error-box"></div>
+
+  <div class="result" id="result">
+    <div class="field"><span class="label">CEP</span><span class="value" id="r-cep"></span></div>
+    <div class="field"><span class="label">Logradouro</span><span class="value" id="r-logradouro"></span></div>
+    <div class="field"><span class="label">Bairro</span><span class="value" id="r-bairro"></span></div>
+    <div class="field"><span class="label">Cidade</span><span class="value" id="r-cidade"></span></div>
+    <div class="field"><span class="label">Estado</span><span class="value" id="r-estado"></span></div>
+  </div>
+
+  <footer>
+    API rodando em <code>localhost:8000</code> · <a href="http://localhost:8000/docs" target="_blank">documentação Swagger</a>
+  </footer>
+</div>
+
+<script>
+  const API_BASE = "http://localhost:8000";
+
+  const form = document.getElementById("form");
+  const input = document.getElementById("cep-input");
+  const btn = document.getElementById("submit-btn");
+  const flow = document.getElementById("flow");
+  const errorBox = document.getElementById("error-box");
+  const result = document.getElementById("result");
+
+  const nodes = {
+    cliente: flow.querySelector('[data-step="cliente"]'),
+    api: flow.querySelector('[data-step="api"]'),
+    viacep: flow.querySelector('[data-step="viacep"]'),
+    json: flow.querySelector('[data-step="json"]'),
+  };
+  const arrows = flow.querySelectorAll(".arrow");
+
+  function resetFlow() {
+    Object.values(nodes).forEach((n) => n.classList.remove("on"));
+    arrows.forEach((a) => a.classList.remove("on"));
+  }
+
+  function lightUpTo(step) {
+    const order = ["cliente", "api", "viacep", "json"];
+    const idx = order.indexOf(step);
+    order.forEach((s, i) => {
+      if (i <= idx) nodes[s].classList.add("on");
+    });
+    arrows.forEach((a, i) => {
+      if (i < idx) a.classList.add("on");
+    });
+  }
+
+  function hideMessages() {
+    errorBox.classList.remove("show");
+    result.classList.remove("show");
+  }
+
+  function showError(texto) {
+    errorBox.textContent = texto;
+    errorBox.classList.add("show");
+  }
+
+  function showResultado(dados) {
+    document.getElementById("r-cep").textContent = dados.cep;
+    document.getElementById("r-logradouro").textContent = dados.logradouro || "—";
+    document.getElementById("r-bairro").textContent = dados.bairro || "—";
+    document.getElementById("r-cidade").textContent = dados.cidade;
+    document.getElementById("r-estado").textContent = dados.estado;
+    result.classList.add("show");
+  }
+
+  form.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    const cep = input.value.trim();
+    if (!cep) return;
+
+    hideMessages();
+    resetFlow();
+    btn.disabled = true;
+    btn.textContent = "Buscando…";
+    lightUpTo("cliente");
+
+    try {
+      await new Promise((r) => setTimeout(r, 150));
+      lightUpTo("api");
+
+      const resposta = await fetch(`${API_BASE}/api/cep/${encodeURIComponent(cep)}`);
+      lightUpTo("viacep");
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        showError(dados.detalhe || "Não foi possível consultar esse CEP.");
+        return;
+      }
+
+      lightUpTo("json");
+      showResultado(dados);
+    } catch (erro) {
+      showError("Não foi possível conectar à API. Ela está rodando em localhost:8000?");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Buscar";
+    }
+  });
+</script>
+
+</body>
+</html>
