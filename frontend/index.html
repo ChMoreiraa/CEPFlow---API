@@ -238,7 +238,7 @@
   </div>
 
   <footer>
-    API rodando em <code>localhost:8000</code> · <a href="http://localhost:8000/docs" target="_blank">documentação Swagger</a>
+    API em produção: <a href="https://cepflow.onrender.com/docs" target="_blank">cepflow.onrender.com</a> · <a href="https://cepflow.onrender.com/docs" target="_blank">documentação Swagger</a>
   </footer>
 </div>
 
@@ -323,7 +323,7 @@
       lightUpTo("json");
       showResultado(dados);
     } catch (erro) {
-      showError("Não foi possível conectar à API. Ela está rodando em localhost:8000?");
+      showError("Não foi possível conectar à API. Tente novamente em instantes — se for a primeira consulta, o servidor pode estar iniciando.");
     } finally {
       btn.disabled = false;
       btn.textContent = "Buscar";
